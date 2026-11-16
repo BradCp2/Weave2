@@ -12,7 +12,7 @@
 #include <vector>
 
 namespace weave::cli {
-    CommandParser::CommandParser() = default;
+    CommandParser::CommandParser(events::EventQueue& eventQueue) : _eventQueue(eventQueue) {}
 
     void CommandParser::parse(const std::vector<std::string> &tokens) {
         _parsedCommand.invocationPath = std::filesystem::current_path();
@@ -20,13 +20,17 @@ namespace weave::cli {
 
         if (tokens.size() == 1)
         {
-            // TODO deploy error event (missing command)
+            _eventQueue.pushEvent
+            (
+                events::EventType::Error,
+                events::EventSource::Parser,
+                "Missing command.\n"
+            );
             _parsedCommand.command = "N/A";
             return;
         }
 
         // First item is always the name of COMMAND.
-        // TODO add flag validation similar to flags
         _parsedCommand.command = tokens.at(1);
 
         for (int i = 2; i < tokens.size(); i++)
@@ -34,23 +38,39 @@ namespace weave::cli {
             if (const std::string& item = tokens.at(i); item.starts_with('-')) {
                 // Flags
                 if (!_flagRegister.contains(item)) {
-                    // TODO deploy error event (invalid flag)
-                    std::cout << "ERROR : Invalid flag name " << item << std::endl;
+
+                    _eventQueue.pushEvent
+                    (
+                      events::EventType::Error,
+                      events::EventSource::Parser,
+                      "Invalid flag : \"" + item + "\".\n"
+                    );
                     return;
                 }
-                // No-arg flags
-                if (_flagRegister[item] == data::FlagArgumentType::None) {
-                    _parsedCommand.flags[item] = "";
+
+                _parsedCommand.flags[item] = "";
+                if (_flagRegister[item] == data::FlagArgumentType::None) {}
+
+                else if (_flagRegister[item] == data::FlagArgumentType::Verbose) {
+                    _verbose = true;
                 }
+                else if (_flagRegister[item] == data::FlagArgumentType::Debug) {
+                    _debug = true;
+                }
+
                 else if (_flagRegister[item] == data::FlagArgumentType::Required) {
-                    try {
-                        // 1-arg flag, arg exists
+                    try
+                    {
                         i++;
                         _parsedCommand.flags[item] = tokens.at(i);
-                    } catch (const std::out_of_range& e) {
-                        // 1-arg flag, missing arg
-                        // TODO deploy error event (flag missing arg)
-                        std::cout << "ERROR : flag \"" << item << "\" missing arguments" << std::endl;
+                    } catch (const std::out_of_range& e)
+                    {
+                        _eventQueue.pushEvent
+                        (
+                            events::EventType::Error,
+                            events::EventSource::Parser,
+                            "Flag : \"" + item + "\" is missing required 1 argument.\n"
+                        );
                         return;
                     }
                 }
@@ -65,5 +85,39 @@ namespace weave::cli {
     const data::parsedCommand& CommandParser::getParsedCommand() const
     {
         return _parsedCommand;
+    }
+
+    const std::string CommandParser::toString() const
+    {
+        std::ostringstream out;
+
+        out << "ParsedCommand data ->\n";
+        out << "\tinvoke\t| " << _parsedCommand.invocationPath << "\n";
+        out << "\tprogram\t| " << _parsedCommand.programPath << "\n";
+        out << "\t" << std::string(12, '-') << "\t\n";
+        out << "\tcommand\t| " << _parsedCommand.command << "\n";
+        out << "\tvalid\t| " << _parsedCommand.validFlag << "\n";
+
+        int argCount = 1;
+        for (const auto& arg : _parsedCommand.arguments) {
+            out << "\targ (" << argCount << ")\t| " << arg << "\n";
+            argCount++;
+        }
+
+        int flagCount = 1;
+        for (const auto& [flag, arg] : _parsedCommand.flags) {
+            out << "\tflg (" << flagCount << ")\t| " << flag << " -> " << arg << "\n";
+            flagCount++;
+        }
+
+        return out.str();
+    }
+
+    bool CommandParser::hasVerbose() const {
+        return _verbose;
+    }
+
+    bool CommandParser::hasDebug() const {
+        return _debug;
     }
 } // cli

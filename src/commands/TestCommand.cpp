@@ -14,7 +14,13 @@ bool weave::commands::TestCommand::validate() const {
     return true;
 }
 
-int weave::commands::TestCommand::execute() {
-    std::cout << "TestCommand::execute()" << std::endl;
+int weave::commands::TestCommand::execute()
+{
+    context_.eventQueue.pushEvent(
+        events::EventType::Success,
+        events::EventSource::Command,
+        "Executed Successfully.\n"
+        );
+
     return 1;
 }

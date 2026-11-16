@@ -12,6 +12,7 @@
 namespace weave::commands::data
 {
     /**
+     * @interface ICommand
      * @brief Abstract base class for Weave2 commands.
      *
      * Concrete command classes implement this interface to provide command-specific behaviour.
@@ -26,6 +27,25 @@ namespace weave::commands::data
     class ICommand
     {
     public:
+        /**
+         * @brief Constructs a command with its parsed input and context.
+         *
+         * @param parsedCommand parsedCommand containing the users parsed input data + metadata.
+         * @param context application context needed for command execution such as eventQueue,
+         * repository common functions, and async worker access
+         *
+         * @See weave::commands::data::CommandContext
+         */
+        ICommand
+        (
+            const cli::data::parsedCommand& parsedCommand,
+            CommandContext& context
+        )
+            : context_(context),
+            parsedCommand_(parsedCommand)
+        {}
+
+
         /**
          * @brief Virtual deconstructor for polymorphic deconstruction.
          *
@@ -51,12 +71,9 @@ namespace weave::commands::data
          *
          * Validates the parsed command based on its argument count and flags before execution begins.
          *
-         * @param parsedCommand The parsed command data containing command name, args, flags and metadata.
-         * @param context The context provides access to common resources the command may require.
-         *
          * @return 0 on success; non-zero if validation or execution fails.
          */
-        int tryExecute(const cli::data::parsedCommand& parsedCommand, CommandContext& context)
+        int tryExecute()
         {
             if (!validate()) {
                 return 1;
@@ -66,6 +83,9 @@ namespace weave::commands::data
         }
 
     protected:
+        CommandContext& context_;
+        cli::data::parsedCommand parsedCommand_;
+
         /**
          * @brief Validates command-specific arguments and flags.
          *

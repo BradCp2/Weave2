@@ -20,7 +20,8 @@ namespace weave::cli::data
     {
         None,       ///< Flag does not require an argument.
         Required,   ///< Flag requires the next token as its value.
-        Message     ///< Flag accepts a message composed of quoted tokens (DEPRECATED).
+        Verbose,    ///< Flag triggers verbose output
+        Debug       ///< Flag triggers debug output (includes verbose)
     };
 
     /**
@@ -40,8 +41,9 @@ namespace weave::cli::data
     {
         static const std::unordered_map<std::string, FlagArgumentType> flagTypeMap
         {
-            {"-v", FlagArgumentType::None},
-            {"--verbose", FlagArgumentType::None},
+            {"-v", FlagArgumentType::Verbose},
+            {"--verbose", FlagArgumentType::Verbose},
+            {"--debug", FlagArgumentType::Debug},
             {"--test", FlagArgumentType::Required}
         };
 

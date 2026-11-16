@@ -4,29 +4,40 @@
 
 #include "CommandDispatcher.h"
 
-#include <iostream>
-
 #include "commands/data/CommandRegistry.h"
 #include "CommandParser.h"
 #include "commands/ICommand.h"
 
-namespace weave::cli {
+namespace weave::cli
+{
     CommandDispatcher::CommandDispatcher(
-        const commands::data::CommandRegistry &commandRegistry) : commandRegistry(commandRegistry) {
+        const commands::data::CommandRegistry &commandRegistry,
+        commands::data::CommandContext &commandContext
+    )
+        : commandRegistry(commandRegistry),
+          commandContext(commandContext)
+    {
     }
 
-    int CommandDispatcher::dispatch(
-        const data::parsedCommand &parsedCommand,
-        commands::data::CommandContext &commandContext
-    ) const {
-        commands::data::ICommand *handler = commandRegistry.findCommand(parsedCommand.command);
+    int CommandDispatcher::dispatch(const data::parsedCommand &parsedCommand) const
+    {
+        auto handler = commandRegistry.createCommand(
+            parsedCommand.command,
+            parsedCommand,
+            commandContext
+        );
 
-        if (handler == nullptr) {
-            // TODO deploy error message (unknown command)
-            std::cout << "Command not found: " << parsedCommand.command << std::endl;
+        if (!handler)
+        {
+            commandContext.eventQueue.pushEvent
+            (
+                events::EventType::Error,
+                events::EventSource::Dispatcher,
+                "Command not found : \"" + parsedCommand.command + "\"\n"
+            );
             return 1;
         }
 
-        return handler->tryExecute(parsedCommand, commandContext);
+        return handler->tryExecute();
     }
 } // cli

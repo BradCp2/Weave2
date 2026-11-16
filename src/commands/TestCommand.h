@@ -7,17 +7,30 @@
 #define WEAVE2_TESTCOMMAND_H
 
 #include "ICommand.h"
-#include "cli/data/ParsedCommand.h"
 #include "commands/data/CommandContext.h"
+
+#include <string>
 
 namespace weave::commands
 {
     /**
-     * @brief Test command used for parser and dispatch validation.
+     * @class TestCommand
+     * @brief Test command implementation.
+     *
+     * A concrete implementation of ICommand used for testing
+     * command registration, creation and execution.
      */
-    class TestCommand : public weave::commands::data::ICommand
+    class TestCommand : public data::ICommand
     {
     public:
+        /**
+         * @brief Inherits contructors from ICommand.
+         *
+         * Allows test command to be constructed via factory with
+         * both a ParsedCommand and CommandContext.
+         */
+        using ICommand::ICommand;
+
         /**
          * @brief Returns the name identifying this command.
          * @return The commands unique name.

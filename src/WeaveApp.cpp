@@ -14,47 +14,54 @@
 
 weave::WeaveApp::WeaveApp() :
     workerManager_(eventQueue_),
-    renderer_(eventQueue_)
-{
-    registerCommands();
-    dispatcher_ = std::make_unique<cli::CommandDispatcher>(commandRegistry_);
-    context_ = std::make_unique<commands::data::CommandContext>
-    (
-        commands::data::CommandContext
-        {
-            .repository = repository_,
-            .workerManager = workerManager_,
-            .renderer = renderer_
-        }
-    );
-}
+    renderer_(eventQueue_),
+    parser_(eventQueue_),
+    context_{
+        .repository = repository_,
+        .workerManager = workerManager_,
+        .eventQueue = eventQueue_,
+    },
+    dispatcher_(commandRegistry_, context_) {}
 
 weave::WeaveApp::~WeaveApp() = default;
 
 void weave::WeaveApp::registerCommands()
 {
-    commandRegistry_.registerCommand(std::make_unique<commands::TestCommand>());
+    commandRegistry_.registerCommand(
+        "test",
+        [](
+            const cli::data::parsedCommand& parsedCommand,
+            commands::data::CommandContext& commandContext)
+        {
+            return std::make_unique<commands::TestCommand>(
+                parsedCommand,
+                commandContext
+            );
+        }
+    );
+
 }
 
 int weave::WeaveApp::run(const std::vector<std::string>& tokens)
 {
     parser_.parse(tokens);
-    temporary(); // DELETE AFTER DEBUGGING
 
-    if (!parser_.getParsedCommand().validFlag) { std::cout << "Terminating..." << std::endl; return 1;}
+    registerCommands();
 
-    return dispatcher_->dispatch(parser_.getParsedCommand(), *context_);
+    renderer_.setVerbose(parser_.hasVerbose());
+    renderer_.setDebug(parser_.hasDebug());
+
+    renderer_.start();
+
+    eventQueue_.pushEvent
+    (
+        events::EventType::Debug,
+        events::EventSource::Parser,
+        parser_.toString()
+    );
+
+    if (!parser_.getParsedCommand().validFlag) { return 1;}
+
+    return dispatcher_.dispatch(parser_.getParsedCommand());
 }
 
-void weave::WeaveApp::temporary()
-{
-    std::cout << "inv : " << parser_.getParsedCommand().invocationPath << std::endl;
-    std::cout << "pgm : " << parser_.getParsedCommand().programPath << std::endl;
-    std::cout << "cmd : " <<parser_.getParsedCommand().command << std::endl;
-    for (std::string p : parser_.getParsedCommand().arguments) {
-        std::cout << "arg : " << p << std::endl;
-    }
-    for (auto f : parser_.getParsedCommand().flags) {
-        std::cout << "flg : " << f.first << " | arg? : " << f.second << std::endl;
-    }
-}

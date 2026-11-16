@@ -28,10 +28,13 @@ namespace weave::cli
         /**
          * @brief Constructs a CommandDispatcher.
          * @param commandRegistry Registry containing the available command handler implementations.
+         * @param commandContext Context providing command resources and dependencies for command execution.
          *
          * Command handlers are registered to prior to construction in @ref weave::WeaveApp::registerCommands()
          */
-        explicit CommandDispatcher(const commands::data::CommandRegistry &commandRegistry);
+        explicit CommandDispatcher(
+            const commands::data::CommandRegistry &commandRegistry,
+            commands::data::CommandContext &commandContext);
 
         /**
          * @brief Dispatches a parsed command for execution.
@@ -39,16 +42,14 @@ namespace weave::cli
          * Locates the appropriate command handler and executes it using supplied command data and context.
          *
          * @param parsedCommand Parsed command containing command name, args, flags, and metadata.
-         * @param commandContext Context providing command resources and dependencies for command execution.
          *
          * @return 0 on success; non-zero if dispatch or execution fails.
          */
-        int dispatch(
-            const data::parsedCommand &parsedCommand,
-            commands::data::CommandContext &commandContext) const;
+        int dispatch(const data::parsedCommand &parsedCommand) const;
 
     private:
         const commands::data::CommandRegistry &commandRegistry;
+        commands::data::CommandContext &commandContext;
     };
 } // cli
 

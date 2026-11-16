@@ -64,15 +64,6 @@ namespace weave
          */
         int run(const std::vector<std::string>& tokens);
 
-        /**
-         * @brief Performs temporary debug functionality.
-         *
-         * Displays components of parsed command for debugging purposes.
-         *
-         * @note DELETE once debug utility flag and module is implemented.
-         */
-        void temporary();
-
     private:
         /**
          * @brief Registers the available commands with the command registry.
@@ -94,11 +85,11 @@ namespace weave
         weave::events::EventQueue eventQueue_;
 
         weave::cli::CommandParser parser_;
-        std::unique_ptr<cli::CommandDispatcher> dispatcher_;
+        weave::cli::CommandDispatcher dispatcher_;
         weave::cli::CLIRenderer renderer_;
 
         weave::commands::data::CommandRegistry commandRegistry_;
-        std::unique_ptr<commands::data::CommandContext> context_;
+        weave::commands::data::CommandContext context_;
     };
 }
 
